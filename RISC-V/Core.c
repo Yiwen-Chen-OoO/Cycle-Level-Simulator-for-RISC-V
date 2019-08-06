@@ -19,6 +19,10 @@ bool tickFunc(Core *core)
     unsigned instruction = core->instr_mem->instructions[core->PC / 4].instruction;
     
     // (Step 2) ...
+    uint8_t optype= instruction & 0b1111111;
+    uint8_t rs1 = instruction & 0x0008F;
+    uint8_t rs2 = instruction & 0x00000F1;
+    uint8_t wr = instruction & 0x08F;
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?!
     core->PC += 4;
@@ -31,5 +35,8 @@ bool tickFunc(Core *core)
     }
     return true;
 }
+
+// int ALU
+// Control
 
 
