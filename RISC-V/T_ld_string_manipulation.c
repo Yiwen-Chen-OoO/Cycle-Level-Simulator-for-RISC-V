@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 int main(){
-    char line[] = "ld x9, 64(x22)";
-    //char line[] = "add x8, x0, x7";
+    //char line[] = "ld x9, 64(x22)";
+    char line[] = "add x8, x0, x7";
+    printf("instr %s\n",line);
     const char *d = "(), ";
     char *reg;
     reg = strtok(line,d);
@@ -30,8 +31,8 @@ int main(){
         reg = strtok(NULL,d);
 
     }
-    printf("instr %s\n",line);
+    //printf("instr %s\n",line);
     char *reg1;
     reg1 = strtok(NULL,d);
-    printf("new %s",reg1);
+    //printf("new %s",reg1);
 }
