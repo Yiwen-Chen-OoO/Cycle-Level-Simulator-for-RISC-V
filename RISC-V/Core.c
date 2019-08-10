@@ -6,10 +6,10 @@ Core *initCore(Instruction_Memory *i_mem)
     core->clk = 0;
     core->PC = 0;
     core->instr_mem = i_mem;
-    core->tick = tickFunc;
-    core->register_file = {0}; 
+    core->tick = tickFunc;  
+    uint8_t i;
 
-    for (int i = 0; i < 32; i++) { core->register_file[i] = 0;}
+    for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
 
     return core;
 }
@@ -22,7 +22,7 @@ bool tickFunc(Core *core)
     unsigned instruction = core->instr_mem->instructions[core->PC / 4].instruction;
     
     // (Step 2) ...
-    uint8_t optype= instruction & 0x0000007F ;
+    uint8_t optype= instruction & 0x0000007F;
     uint8_t rs1 = instruction &   0x000F8000;
     uint8_t rs2 = instruction &   0x01F00000;
     uint8_t wr = instruction &    0x00000F80;
