@@ -19,12 +19,15 @@ bool tickFunc(Core *core)
     // Steps may include
     // (Step 1) Reading instruction from instruction memory
     unsigned instruction = core->instr_mem->instructions[core->PC / 4].instruction;
+    bool Branch, MemRead,MemtoReg,ALUOp,MemWrite,ALUSrc,RegWrite;
     
     // (Step 2) ...
     uint8_t optype= instruction & 0x0000007F;
-    uint8_t rs1 = instruction &   0x000F8000;
-    uint8_t rs2 = instruction &   0x01F00000;
-    uint8_t wr = instruction &    0x00000F80;
+    uint8_t rs1 = instruction &   0x000F8000 >> 12;
+    uint8_t rs2 = instruction &   0x01F00000 >> 20;
+    uint8_t wr = instruction &    0x00000F80 >> 4;
+
+
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?!
     core->PC += 4;
