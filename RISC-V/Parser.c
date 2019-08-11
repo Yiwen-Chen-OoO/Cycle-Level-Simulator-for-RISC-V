@@ -37,9 +37,7 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
         {
             parseRType(raw_instr, &(i_mem->instructions[IMEM_index]));
             i_mem->last = &(i_mem->instructions[IMEM_index]);
-	    }
-
-        if (strcmp(raw_instr, "ld") == 0 ||
+	    } else if (strcmp(raw_instr, "ld") == 0 ||
             strcmp(raw_instr, "addi") == 0 ||
             strcmp(raw_instr, "slli") == 0 ||
             strcmp(raw_instr, "xori") == 0 ||
@@ -50,6 +48,17 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
         {
             parseItype(raw_instr, &(i_mem->instructions[IMEM_index]));
             i_mem->last = &(i_mem->instructions[IMEM_index]);
+        } else if (strcmp(raw_instr, "sd") == 0)
+        {
+            parseSType(raw_instr, &(i_mem->instructions[IMEM_index]));
+            i_mem->last = &(i_mem->instructions[IMEM_index]);
+        } else if (strcmp(raw_instr, "beq") == 0 ||
+                strcmp(raw_instr, "bne") == 0 ||
+                strcmp(raw_instr, "blt") == 0 ||
+                strcmp(raw_instr, "bge") == 0){
+            parseSBType(raw_instr, &(i_mem->instructions[IMEM_index]));
+            i_mem->last = &(i_mem->instructions[IMEM_index]);        
+        
         }
 
         IMEM_index++;
@@ -57,68 +66,6 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
     }
 
     fclose(fd);
-}
-
-void parseItype(char *opr, Instruction *instr)
-{
-    // I-type：ld, addi, slli, xori, srli, ori, andi, jarl;
-    // ld, sd
-    
-    if (strcmp(opr, "ld") == 0)
-    {
-        unsigned opcode = 0b0000011;
-        unsigned funct3 = 0b011;
-        unsigned funct7 = 0;
-
-        const char *d = " ,()";
-        char *reg = strtok(NULL, d);
-        unsigned rd = regIndex(reg);
-        
-        // reg below is actually immi
-        reg = strtok(NULL, d);
-        int immi = atoi(reg);
-
-        reg = strtok(NULL, d);
-        unsigned rs_1 = regIndex(reg);
-    } else {
-
-        if (strcmp(opr, "addi") == 0)
-        {
-            unsigned opcode = 0b0010011;
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } else if (strcmp(opr, "slli") == 0)
-        {
-            unsigned opcode = 0b0010011;        //Not yet modified from here
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } else if (strcmp(opr, "xori") == 0)
-        {
-            unsigned opcode = 0b0010011;
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } else if (strcmp(opr, "srli") == 0)
-        {
-            unsigned opcode = 0b0010011;
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } else if (strcmp(opr, "ori") == 0)
-        {
-            unsigned opcode = 0b0010011;
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } else if (strcmp(opr, "andi") == 0)
-        {
-            unsigned opcode = 0b0010011;
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } else if (strcmp(opr, "jarl") == 0)
-        {
-            unsigned opcode = 0b0010011;
-            unsigned funct3 = 0;
-            unsigned funct7 = 0;
-        } 
-    }
 }
 
 void parseRType(char *opr, Instruction *instr)
@@ -133,7 +80,41 @@ void parseRType(char *opr, Instruction *instr)
         opcode = 51;
         funct3 = 0;
         funct7 = 0;
-    } 
+    } else if (strcmp(opr, "sub") == 0)
+    {
+        opcode = 51;
+        funct3 = 0;
+        funct7 = 0x20;
+    } else if (strcmp(opr, "sll") == 0)
+    {
+        opcode = 51;
+        funct3 = 0x1;
+        funct7 = 0;
+    }
+    else if (strcmp(opr, "srl") == 0)
+    {
+        opcode = 51;
+        funct3 = 0x5;
+        funct7 = 0;
+    }
+    else if (strcmp(opr, "xor") == 0)
+    {
+        opcode = 51;
+        funct3 = 0x4;
+        funct7 = 0;
+    }
+    else if (strcmp(opr, "or") == 0)
+    {
+        opcode = 51;
+        funct3 = 0x6;
+        funct7 = 0;
+    }
+    else if (strcmp(opr, "and") == 0)
+    {
+        opcode = 51;
+        funct3 = 0x7;
+        funct7 = 0;
+    }
     
     char *reg = strtok(NULL, ", ");
     unsigned rd = regIndex(reg);
@@ -154,6 +135,168 @@ void parseRType(char *opr, Instruction *instr)
     instr->instruction |= (funct7 << (7 + 5 + 3 + 5 + 5));
   
 }
+
+void parseItype(char *opr, Instruction *instr)
+{
+    // I-type：ld, addi, slli, xori, srli, ori, andi, jarl;
+    // ld, sd
+    unsigned opcode = 0;
+    unsigned funct3 = 0;
+    unsigned rd, rs_1, imm;
+    const char *d = " ,()";
+    
+    if (strcmp(opr, "ld") == 0)
+    {
+        unsigned opcode = 0b0000011;
+        unsigned funct3 = 0b011;   
+        
+        char *reg = strtok(NULL, d);
+        rd = regIndex(reg);
+        
+        reg = strtok(NULL,d);
+        imm = atoi(reg);
+
+        reg = strtok(NULL,d);
+        rs_1 = regIndex(reg);
+    } else {
+
+        if (strcmp(opr, "addi") == 0)
+        {
+            unsigned opcode = 0x13;
+            unsigned funct3 = 0x7;
+        } else if (strcmp(opr, "slli") == 0)
+        {
+            opcode = 0x13;
+            funct3 = 0x1;
+        }
+        else if (strcmp(opr, "xori") == 0)
+        {
+            opcode = 0x13;
+            funct3 = 0x4;
+        }
+        else if (strcmp(opr, "srli") == 0)
+        {
+            opcode = 0x13;
+            funct3 = 0x5;
+        }
+        else if (strcmp(opr, "ori") == 0)
+        {
+            opcode = 0x13;
+            funct3 = 0x6;
+        }
+        else if (strcmp(opr, "andi") == 0)
+        {
+            opcode = 0x13;
+            funct3 = 0x7;
+        }
+        char *reg = strtok(NULL,", ");
+        rd = regIndex(reg);
+
+        reg = strtok(NULL,", ");
+        rs_1 = regIndex(reg);
+        reg = strtok(NULL, ", ");
+        reg[strlen(reg)-1] = '\0';
+        imm = atoi(reg);
+    }
+    instr->instruction |= opcode;
+    instr->instruction |= (rd << 7);
+    instr->instruction |= (funct3 << (7 + 5));
+    instr->instruction |= (rs_1 << (7 + 5 + 3));
+    instr->instruction |= (imm << (7 + 5 + 3 + 10));
+}
+
+void parseSType(char *opr, Instruction *instr)
+{
+    instr->instruction = 0;
+    unsigned opcode = 0;
+    unsigned funct3 = 0;
+
+    if (strcmp(opr, "sd") == 0)
+    {
+        opcode = 0x23;
+        funct3 = 0x3;
+    }
+
+    char *reg = strtok(NULL, ", ");
+    unsigned rs_2 = regIndex(reg);
+    printf("%s\n", reg);
+
+    reg = strtok(NULL, "(");
+    unsigned imm = atoi(reg);
+    printf("%s\n", reg);
+
+    reg = strtok(NULL, ")");
+    //reg[strlen(reg)-1] = '\0';
+    unsigned rs_1 = regIndex(reg);
+    printf("%s\n", reg);
+
+    unsigned imm_1 = imm & 31;
+    printf("imm_1: %u\n", imm_1);
+    unsigned imm_2 = (imm & 4064) >> 5;
+    printf("imm_2: %u\n", imm_2);
+
+    instr->instruction |= opcode;
+    instr->instruction |= (imm_1 << 7);
+    instr->instruction |= (funct3 << (7 + 5));
+    instr->instruction |= (rs_1 << (7 + 5 + 3));
+    instr->instruction |= (rs_2 << (7 + 5 + 3 + 5));
+    instr->instruction |= (imm_2 << (7 + 5 + 3 + 5 + 5));
+    printf("%u\n", instr->instruction);
+}
+
+void parseSBType(char *opr, Instruction *instr)
+{
+    instr->instruction = 0;
+    unsigned opcode = 0;
+    unsigned funct3 = 0;
+
+    if (strcmp(opr, "beq") == 0)
+    {
+        opcode = 0x63;
+        funct3 = 0;
+    }
+    else if (strcmp(opr, "bne") == 0)
+    {
+        opcode = 0x63;
+        funct3 = 0x1;
+    }
+    else if (strcmp(opr, "blt") == 0)
+    {
+        opcode = 0x63;
+        funct3 = 0x4;
+    }
+    else if (strcmp(opr, "bge") == 0)
+    {
+        opcode = 0x63;
+        funct3 = 0x5;
+    }
+
+    char *reg = strtok(NULL, ", ");
+    unsigned rs_1 = regIndex(reg);
+    printf("%s\n", reg);
+
+    reg = strtok(NULL, ", ");
+    unsigned rs_2 = regIndex(reg);
+    printf("%s\n", reg);
+
+    reg = strtok(NULL, ", ");
+    reg[strlen(reg)-1] = '\0';
+    unsigned imm = atoi(reg);
+    printf("%s\n", reg);
+
+    unsigned imm_1 = (imm & 30) + ((imm & 1024) >> 10);
+    unsigned imm_2 = ((imm & 2048) >> 5) + ((imm & 1008) >> 4);
+
+    // Contruct instruction
+    instr->instruction |= opcode;
+    instr->instruction |= (imm_1 << 7);
+    instr->instruction |= (funct3 << (7 + 5));
+    instr->instruction |= (rs_1 << (7 + 5 + 3));
+    instr->instruction |= (rs_2 << (7 + 5 + 3 + 5));
+    instr->instruction |= (imm_2 << (7 + 5 + 3 + 5 + 5));
+    printf("%u\n", instr->instruction);
+}
+
 
 int regIndex(char *reg)
 {
