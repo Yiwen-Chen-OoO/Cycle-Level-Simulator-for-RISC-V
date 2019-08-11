@@ -8,7 +8,6 @@ Core *initCore(Instruction_Memory *i_mem)
     core->instr_mem = i_mem;
     core->tick = tickFunc;  
     uint8_t i;
-
     for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
 
     return core;
