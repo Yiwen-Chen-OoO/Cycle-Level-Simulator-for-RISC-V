@@ -32,7 +32,9 @@ bool tickFunc(Core *core)
     uint64_t read_data2 = core->register_file[rs2];
     
     uint64_t ALU_result;
-    ALU_result = ALU(read_data1,read_data2,&ALU_zero);
+    int ALU_zero;
+    uint8_t ALU_Control_line；
+    ALU(read_data1,read_data2,ALU_Control_line,&ALU_zero);
 
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?!
@@ -56,7 +58,8 @@ uint64_t Mux(int signal, uint64_t data1, uint64_t data2)
     }
 }
 
-uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line, char *ALU_zero){
+uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line, int *ALU_zero)
+{
     uint64_t result = 0;
     if (ALU_Control_line == 0000){
         result = data1 & data2;
@@ -75,6 +78,8 @@ uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line, char *ALU
     }
     return result;
 }
+
+
 
 // Control
 
