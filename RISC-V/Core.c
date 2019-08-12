@@ -27,6 +27,12 @@ bool tickFunc(Core *core)
     uint8_t rs2 = instruction &   0x01F00000 >> 20;
     uint8_t wr = instruction &    0x00000F80 >> 4;
 
+    // for R type, Read data 1 and 2;
+    uint64_t read_data1 = core->register_file[rs1];
+    uint64_t read_data2 = core->register_file[rs2];
+    
+    uint64_t ALU_result;
+    ALU_result = ALU(read_data1,read_data2,&ALU_zero);
 
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?!
@@ -41,7 +47,35 @@ bool tickFunc(Core *core)
     return true;
 }
 
-// int ALU
+uint64_t Mux(int signal, uint64_t data1, uint64_t data2)
+{
+    if (signal == 1){
+        return data2;
+    } else {
+        return data1;
+    }
+}
+
+uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line, char *ALU_zero){
+    uint64_t result = 0;
+    if (ALU_Control_line == 0000){
+        result = data1 & data2;
+    } else if (ALU_Control_line == 0001){
+        result = data1 | data2;
+    } else if (ALU_Control_line == 0010){
+        result = data1 + data2;
+    }else if (ALU_Control_line == 0001){
+        result = data1 - data2;
+    }
+
+    if (result == 0){
+        ALU_zero = 1;
+    } else {
+        ALU_zero = 0;
+    }
+    return result;
+}
+
 // Control
 
 
