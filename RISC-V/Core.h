@@ -19,11 +19,11 @@ typedef struct Core
     // TODO, define your components here
     // What else you need? Data memory? Register file?
     Instruction_Memory *instr_mem;
-    
+    uint64_t register_file[32];
     // TODO, simulation function
     bool (*tick)(Core *core);
 
-    uint64_t register_file[32];
+    
 }Core;
 
 Core *initCore(Instruction_Memory *i_mem);
