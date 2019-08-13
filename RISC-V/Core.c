@@ -22,6 +22,7 @@ bool tickFunc(Core *core)
     bool Branch, MemRead,MemtoReg,ALUOp,MemWrite,ALUSrc,RegWrite;
     
     // (Step 2) ...
+
     uint8_t optype= instruction & 0x0000007F;
     uint8_t rs1 = instruction &   0x000F8000 >> 12;
     uint8_t rs2 = instruction &   0x01F00000 >> 20;
@@ -34,7 +35,7 @@ bool tickFunc(Core *core)
     uint64_t ALU_result;
     int ALU_zero;
     uint8_t ALU_Control_line；
-    ALU(read_data1,read_data2,ALU_Control_line,&ALU_zero);
+    ALU_result = ALU(read_data1,read_data2,ALU_Control_line,&ALU_zero);
 
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?!
