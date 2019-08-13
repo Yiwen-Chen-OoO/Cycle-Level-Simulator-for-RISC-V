@@ -12,7 +12,17 @@ Core *initCore(Instruction_Memory *i_mem)
 
     return core;
 }
+Control *initControl(uint8_t operation){
+    Control *control = (Control *)malloc(sizeof(Control));
+    control->RegWrite = false;
+    control->ALUSrc = false;
+    control->PCSrc = false;
+    control->MemRead = false;
+    control->MemWrite = false;
+    control->MemtoReg = false;
+    return control;
 
+}
 // FIXME, implement this function
 bool tickFunc(Core *core)
 {
