@@ -49,7 +49,7 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
             strcmp(raw_instr, "andi") == 0 ||
             strcmp(raw_instr, "jarl") == 0)
         {
-            parseItype(raw_instr, &(i_mem->instructions[IMEM_index]));
+            parseIType(raw_instr, &(i_mem->instructions[IMEM_index]));
             i_mem->last = &(i_mem->instructions[IMEM_index]);
         } else if (strcmp(raw_instr, "sd") == 0)
         {
@@ -144,7 +144,7 @@ void parseRType(char *opr, Instruction *instr)
     printf("%u\n", instr->instruction);
 }
 
-void parseItype(char *opr, Instruction *instr)
+void parseIType(char *opr, Instruction *instr)
 {
     // I-type：ld, addi, slli, xori, srli, ori, andi, jarl;
     // ld, sd

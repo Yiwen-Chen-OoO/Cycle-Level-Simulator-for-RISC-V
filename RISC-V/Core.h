@@ -8,14 +8,14 @@
 #include <stdio.h>
 
 #define BOOL bool
-struct Control;
-typedef struct Control Control;
 
-typedef struct Control
+struct CONTROL
 {
-    bool RegWrite, ALUSrc, PCSrc, MemRead, MemWrite, MemtoReg;
-}Control;
+    bool Branch, MemRead, MemtoReg, MemWrite,ALUSrc,RegWrite;
+    uint8_t ALUOp;
+}control;
 
+// pre-definition
 struct Core;
 typedef struct Core Core;
 typedef struct Core
