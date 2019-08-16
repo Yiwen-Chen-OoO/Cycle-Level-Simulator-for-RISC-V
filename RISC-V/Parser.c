@@ -27,6 +27,9 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
 
         // Extract operation
         char *raw_instr = strtok(line, " ");
+
+        printf("%s\n", raw_instr);
+
         if (strcmp(raw_instr, "add") == 0 ||
             strcmp(raw_instr, "sub") == 0 ||
             strcmp(raw_instr, "sll") == 0 ||
@@ -55,7 +58,8 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
         } else if (strcmp(raw_instr, "beq") == 0 ||
                 strcmp(raw_instr, "bne") == 0 ||
                 strcmp(raw_instr, "blt") == 0 ||
-                strcmp(raw_instr, "bge") == 0){
+                strcmp(raw_instr, "bge") == 0)
+        {
             parseSBType(raw_instr, &(i_mem->instructions[IMEM_index]));
             i_mem->last = &(i_mem->instructions[IMEM_index]);        
         
@@ -119,13 +123,17 @@ void parseRType(char *opr, Instruction *instr)
     char *reg = strtok(NULL, ", ");
     unsigned rd = regIndex(reg);
 
+    printf("%s\n", reg);
+
     reg = strtok(NULL, ", ");
     unsigned rs_1 = regIndex(reg);
+
+    printf("%s\n", reg);
 
     reg = strtok(NULL, ", ");
     reg[strlen(reg)-1] = '\0';
     unsigned rs_2 = regIndex(reg);
-
+    printf("%s\n", reg);
     // Contruct instruction
     instr->instruction |= opcode;
     instr->instruction |= (rd << 7);
@@ -133,13 +141,14 @@ void parseRType(char *opr, Instruction *instr)
     instr->instruction |= (rs_1 << (7 + 5 + 3));
     instr->instruction |= (rs_2 << (7 + 5 + 3 + 5));
     instr->instruction |= (funct7 << (7 + 5 + 3 + 5 + 5));
-  
+    printf("%u\n", instr->instruction);
 }
 
 void parseItype(char *opr, Instruction *instr)
 {
     // I-type：ld, addi, slli, xori, srli, ori, andi, jarl;
     // ld, sd
+    instr->instruction = 0;
     unsigned opcode = 0;
     unsigned funct3 = 0;
     unsigned rd, rs_1, imm;
@@ -152,12 +161,15 @@ void parseItype(char *opr, Instruction *instr)
         
         char *reg = strtok(NULL, d);
         rd = regIndex(reg);
+        printf("%s\n", reg);
         
         reg = strtok(NULL,d);
         imm = atoi(reg);
+        printf("%s\n", reg);
 
         reg = strtok(NULL,d);
         rs_1 = regIndex(reg);
+        printf("%s\n", reg);
     } else {
 
         if (strcmp(opr, "addi") == 0)
@@ -191,12 +203,18 @@ void parseItype(char *opr, Instruction *instr)
         }
         char *reg = strtok(NULL,", ");
         rd = regIndex(reg);
+        printf("%s\n", reg);
+        printf("%u\n", rd);
 
         reg = strtok(NULL,", ");
         rs_1 = regIndex(reg);
+        printf("%s\n", reg);
+        printf("%u\n", rs_1);
         reg = strtok(NULL, ", ");
         reg[strlen(reg)-1] = '\0';
         imm = atoi(reg);
+        printf("%s\n", reg);
+        printf("%u\n", imm);
     }
     instr->instruction |= opcode;
     instr->instruction |= (rd << 7);
