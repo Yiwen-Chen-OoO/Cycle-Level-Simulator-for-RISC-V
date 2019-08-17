@@ -9,7 +9,7 @@ Core *initCore(Instruction_Memory *i_mem)
     core->tick = tickFunc;  
     uint8_t i;
     for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
-
+    core->zero = false;
     return core;
 }
 
@@ -43,10 +43,16 @@ bool tickFunc(Core *core)
     //if is negtive number, remove minus sign
     if ((instruction & 0x80000000 >> 31) == 1)
     {
-        imm = instruction & 0x7FFFFFFF;
+        imm = instruction - 1;
         imm = ~imm;
+        
     }
+    
+    //ALU Unit Operation
 
+    uint64_t data1 = read_data1;
+    uint64_t data2 = Mux(control.ALUSrc,read_data1,read_data2);
+    
     //ALU(read_data1,mux(control.ALUSrc,read_data2,imm),ALU_control);
 
 
@@ -155,9 +161,23 @@ uint8_t ALU_control(uint8_t ALUOp, uint32_t instruction )
     }
 }
 
-void ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line, uint64_t *ALU_zero, uint64_t *result)
+uint8_t func3(unsigned instruction)
 {
-    result = 0;
+    uint8_t fn3 = 0;
+    fn3 = instruction & 0xF80>>7;
+    return fn3;
+}
+
+uint8_t func7(unsigned instruction)
+{
+    uint8_t fn7 = 0;
+    fn7 = instruction & 0xFE000000>>25;
+    return fn7;
+}
+
+uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
+{
+    uint64_t result = 0;
     if (ALU_Control_line == 0000){
         result = data1 & data2;
     } else if (ALU_Control_line == 0001){
@@ -169,9 +189,9 @@ void ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line, uint64_t *ALU
     }
 
     if (result == 0){
-        ALU_zero = 1;
+        core->zero = 1;
     } else {
-        ALU_zero = 0;
+        core->zero = 0;
     }
     
 }
