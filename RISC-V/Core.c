@@ -7,9 +7,9 @@ Core *initCore(Instruction_Memory *i_mem)
     core->PC = 0;
     core->instr_mem = i_mem;
     core->tick = tickFunc;  
-    uint8_t i;
+    int i;
     for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
-    core->zero = false;
+    for (i=0; i< 256; i++) {core->memmory[i] = 0;}
     return core;
 }
 
@@ -52,10 +52,11 @@ bool tickFunc(Core *core)
 
     uint64_t data1 = read_data1;
     uint64_t data2 = Mux(control.ALUSrc,read_data1,read_data2);
+    uint64_t ALU_result;
+    ALU_result = ALU(data1,data2,ALU_control(control.ALUOp,instruction));
+
+    //
     
-    //ALU(read_data1,mux(control.ALUSrc,read_data2,imm),ALU_control);
-
-
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?
     core->PC += 4;
@@ -188,11 +189,7 @@ uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
         result = data1 - data2;
     }
 
-    if (result == 0){
-        core->zero = 1;
-    } else {
-        core->zero = 0;
-    }
+
     
 }
 
