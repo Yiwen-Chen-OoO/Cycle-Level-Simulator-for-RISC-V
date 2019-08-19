@@ -25,7 +25,7 @@ int main(int argc, const char *argv[])
 
     /* Task Three - Simulation */
     while (core->tick(core));
-
+    
     printf("Simulation is finished.\n");
 
     free(core);    

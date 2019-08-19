@@ -34,17 +34,21 @@ bool tickFunc(Core *core)
     
     /* (Step 3) Control Unit, take opcode as input
             Output 7 bool signal */
-    control_unit(optype);
+    control_unit(optype,instruction);
 
     
     //for R type, Read data 1 and 2;
     uint64_t read_data1 = core->register_file[rs1];
-    uint64_t read_data2 = core->register_file[rs2];
+    uint64_t read_data2 = core->register_file[rs2]; 
+    printf("rs_1\n", read_data1);
+    printf("rs_2\n", read_data1);
     //if is negtive number, remove minus sign
-    if ((instruction & 0x80000000 >> 31) == 1)
+    if ((control.imm & 0x800 >> 11) == 1)
     {
-        imm = instruction - 1;
+        imm = control.imm - 1;
         imm = ~imm;
+        imm = imm & 0xFFF;
+
         
     }
     
@@ -52,15 +56,36 @@ bool tickFunc(Core *core)
 
     uint64_t data1 = read_data1;
     uint64_t data2 = Mux(control.ALUSrc,read_data1,read_data2);
-    uint64_t ALU_result;
-    ALU_result = ALU(data1,data2,ALU_control(control.ALUOp,instruction));
+    printf("rs_1: %u\n", read_data1);
+    printf("rs_2: %u\n", read_data2);
+    printf("ALU_In1: %u\n", data1);
+    printf("ALU_In12: %u\n", data2);
+    uint8_t ALUControlSignal = ALU_control(control.ALUOp,instruction);
+    uint64_t ALU_result = ALU(data1,data2,ALUControlSignal);
 
-    //
+    uint64_t ReadData;
+    if (control.MemWrite){
+        core->memmory[ALU_result] = read_data2;
+
+    }
+    if(control.MemRead){
+        ReadData = core->memmory[ALU_result];
+    }
+
+    if(control.RegWrite){
+        core->register_file[rd] = Mux(control.MemtoReg, ALU_result,ReadData);
+    }
+    
     
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?
-    core->PC += 4;
+    
+    unsigned PCcontrol = control.Branch && BranchControl(instruction,read_data1,read_data2);
+    unsigned PCincrement = Mux(PCcontrol,4,(core->PC + (imm<<1)));
 
+    core->PC += PCincrement;
+
+    
     ++core->clk;
     // Are we reaching the final instruction?
     if (core->PC > core->instr_mem->last->addr)
@@ -69,7 +94,7 @@ bool tickFunc(Core *core)
     }
     return true;
 }
-void control_unit(unsigned optype)
+void control_unit(unsigned optype,unsigned instruction)
 {
     switch (optype)
     {
@@ -81,7 +106,8 @@ void control_unit(unsigned optype)
             control.MemRead = false;
             control.MemWrite = false;
             control.Branch = false;
-            control.ALUOp = 0b10;        
+            control.ALUOp = 0b10;       
+            control.imm = 0; 
             break;
         case 0x3:
             // ld type I
@@ -92,6 +118,7 @@ void control_unit(unsigned optype)
             control.MemWrite = false;
             control.Branch = false;
             control.ALUOp = 0b00; 
+            control.imm = (instruction & 0b11111111111100000000000000000000) >> 20;
             break;
         case 0x23:
             // sd type S
@@ -102,6 +129,7 @@ void control_unit(unsigned optype)
             control.MemWrite = true;
             control.Branch = false;
             control.ALUOp = 0b00; 
+            control.imm = ((instruction & 0b11111110000000000000000000000000) >> 20) + ((instruction & 0b111110000000) >> 7);
             break;
         case 0x63:
             // beq type: SB
@@ -112,6 +140,9 @@ void control_unit(unsigned optype)
             control.MemWrite = false;
             control.Branch = true;
             control.ALUOp = 0b01; 
+            control.imm = ((instruction & 0b10000000000000000000000000000000) >> 20) + ((instruction & 0b10000000) << 3) + 
+                          ((instruction & 0b1111110000000000000000000000000) >> 21) + ((instruction & 0b111100000000) >> 8);
+
             break;
 
         case 0x13: 
@@ -126,6 +157,7 @@ void control_unit(unsigned optype)
             control.MemWrite = false;
             control.Branch = false;
             control.ALUOp = 0b00; 
+            control.imm = (instruction & 0b11111111111100000000000000000000) >> 20;
 
             break;
         //jalr :I type x67/0
@@ -162,16 +194,16 @@ uint8_t ALU_control(uint8_t ALUOp, uint32_t instruction )
     }
 }
 
-uint8_t func3(unsigned instruction)
+unsigned func3(unsigned instruction)
 {
-    uint8_t fn3 = 0;
+    unsigned fn3 = 0;
     fn3 = instruction & 0xF80>>7;
     return fn3;
 }
 
-uint8_t func7(unsigned instruction)
+unsigned func7(unsigned instruction)
 {
-    uint8_t fn7 = 0;
+    unsigned fn7 = 0;
     fn7 = instruction & 0xFE000000>>25;
     return fn7;
 }
@@ -189,12 +221,38 @@ uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
         result = data1 - data2;
     }
 
-
+    return result;
     
 }
 
 
+int BranchControl(unsigned instruction, unsigned rs1, unsigned rs2){
 
+    int result;
+
+    if(func3(instruction) == 0x0 && (rs1 == rs2))
+    {
+        result = 1;
+    }
+    else if(func3(instruction) && (rs1 != rs2))
+    {
+        result = 1;
+    }
+    else if(func3(instruction) && (rs1 < rs2))
+    {
+        result = 1;
+    }
+    else if(func3(instruction) && (rs1 >= rs2))
+    {
+        result = 1;
+    }
+    else
+    {
+        result = 0;
+    }
+    
+    return result;
+}
 // Control
 
 

@@ -221,6 +221,7 @@ void parseIType(char *opr, Instruction *instr)
     instr->instruction |= (funct3 << (7 + 5));
     instr->instruction |= (rs_1 << (7 + 5 + 3));
     instr->instruction |= (imm << (7 + 5 + 3 + 10));
+    printf("%u\n", instr->instruction);
 }
 
 void parseSType(char *opr, Instruction *instr)
