@@ -55,8 +55,8 @@ bool tickFunc(Core *core)
     control.imm = imm;
     
     //for R type, Read data 1 and 2;ls
-    uint64_t read_data1 = core->register_file[rs1];
-    uint64_t read_data2 = core->register_file[rs2]; 
+    int64_t read_data1 = core->register_file[rs1];
+    int64_t read_data2 = core->register_file[rs2]; 
 
     //if is negtive number, remove minus sign
     if ((control.imm & 0x800 >> 11) == 1)
@@ -68,18 +68,20 @@ bool tickFunc(Core *core)
     
     //ALU Unit Operation
 
-    uint64_t data1 = read_data1;
-    uint64_t data2 = Mux(control.ALUSrc,read_data1,imm);
+    int64_t data1 = read_data1;
+    int64_t data2 = Mux(control.ALUSrc,read_data2,imm);
     uint8_t ALUControlSignal = ALU_control(control.ALUOp,instruction);
     int ALU_result = ALU(data1,data2,ALUControlSignal);
     printf("r1 %u \n", rs1);
     printf("r2 %u \n", rs2);
     printf("rd %u \n", rd);
     printf("immi %u \n", imm);
-    printf("data1 %"PRIu64"\n", data1);
-    printf("data2 %"PRIu64"\n", data2);
+    printf("data1 %"PRId64"\n", data1);
+    printf("data2 %"PRId64"\n", data2);
+    printf("ALUOpl %"PRIu8"\n",control.ALUOp);
+    printf("ALUSignal %"PRIu8"\n",ALUControlSignal);
     printf("ALU_result: %d\n", ALU_result);
-    uint64_t ReadData;
+    int64_t ReadData;
     if (control.MemWrite){
         core->memmory[ALU_result] = read_data2;
 
@@ -87,24 +89,24 @@ bool tickFunc(Core *core)
     if(control.MemRead){
         ReadData = core->memmory[ALU_result];
         printf("MemRead:");
-        printf("%"PRIu64"\n",core->memmory[ALU_result]);
+        printf("%"PRId64"\n",core->memmory[ALU_result]);
     }
 
     if(control.RegWrite){
         core->register_file[rd] = Mux(control.MemtoReg, ALU_result,ReadData);
         printf("RegWrite:");
-        printf("%"PRIu64"\n",core->register_file[rd]);
+        printf("%"PRId64"\n",core->register_file[rd]);
     }
     
-    printf("ctrl_immi %"PRIu64" \n", control.imm);
+    printf("ctrl_immi %"PRId64" \n", control.imm);
     int i;
     for (i=0;i<12;++i){
-    printf("rst@%i %"PRIu64" \n",i,core->register_file[i]);
+    printf("rst@%i %"PRId64" \n",i,core->register_file[i]);
     }
     for (i=40;i<50;++i){
-    printf("mem@%i %"PRIu64" \n",i,core->memmory[i]);
+    printf("mem@%i %"PRId64" \n",i,core->memmory[i]);
     }
-    
+    printf("===========================================");
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?
     
     unsigned PCcontrol = control.Branch && BranchControl(instruction,read_data1,read_data2);
@@ -244,7 +246,7 @@ void control_unit(unsigned optype,unsigned instruction)
         //jal: UJ type x6F
     }
 }
-uint64_t Mux(bool signal, uint64_t data1, uint64_t data2)
+int64_t Mux(bool signal, int64_t data1, int64_t data2)
 {
     if (signal){
         return data2;
@@ -255,32 +257,61 @@ uint64_t Mux(bool signal, uint64_t data1, uint64_t data2)
 
 uint8_t ALU_control(uint8_t ALUOp, uint32_t instruction )
 {
-    if (ALUOp == 0b00){
+    uint8_t fn3 = func3(instruction);
+    printf("func3 %"PRIu8"\n",fn3);
+    switch (ALUOp){
+        // ld and sd
+    case 0b00:
         return 0b0010;
-    } else if (ALUOp == 0b01){
-        if ((func3(instruction)==0) || (func3(instruction)==1))
-        return 0b0110;
-        if (func3(instruction) >= 0b100 && func3(instruction) <= 0b111)
+
+    case 0b01:
+        // beq and bne
+        if (fn3 == 0 || fn3 == 0b001)
+            return 0b0110;
+
+        // blt, bge, bltu and bgeu
+        if (fn3 >= 0b100 && fn3 <= 0b111)
             return 0b0111;
-    } else {
-        if (func3(instruction) == 0){
-            if (func7(instruction)==0){
+    //  R-type
+    case 0b10:
+        switch (fn3)
+        {
+        case 0:
+            // add
+            if (func7(instruction) == 0)
                 return 0b0010;
-            } else {
+            // sub
+            if (func7(instruction) == 0b0100000)
                 return 0b0110;
-            }
-        } else if (func3(instruction)== 0x111){
+        // sll
+        case 0b001:
+            return 0b0011;
+        // slt
+        case 0b010:
+            return 0b0111;
+        // xor
+        case 0b100:
+            return 0b0101;
+        // srl
+        case 0b101:
+            return 0b0100;
+        // or
+        case 0b110:
+            return 0b0001;
+        // and
+        case 0b111:
             return 0;
-        } else if (func3(instruction) == 0b110){
-            return 1;
         }
+    default:
+        return -1;
     }
+
 }
 
 unsigned func3(unsigned instruction)
 {
     unsigned fn3 = 0;
-    fn3 = instruction & 0x7000>>12;
+    fn3 = (instruction & 0x7000)>>12;
     return fn3;
 }
 
@@ -291,7 +322,7 @@ unsigned func7(unsigned instruction)
     return fn7;
 }
 
-int ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
+int ALU(int64_t data1, int64_t data2, uint8_t ALU_Control_line)
 {
     int result = 0;
     if (ALU_Control_line == 0b0000){

@@ -1,4 +1,4 @@
 ld x7, 40(x1)
-add x9, x3, x4
+sub x9, x3, x4
 ld x10, 48(x1)
 add x11, x5, x6
