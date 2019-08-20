@@ -42,7 +42,7 @@ uint64_t Mux(bool signal, uint64_t data1, uint64_t data2);
 uint8_t ALU_control(uint8_t ALUOp, uint32_t instruction );
 unsigned func3(unsigned instruction);
 unsigned func7(unsigned instruction);
-uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line);
+int ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line);
 int BranchControl(unsigned instruction, unsigned rs1, unsigned rs2);
 unsigned getImm(unsigned instruction);
 

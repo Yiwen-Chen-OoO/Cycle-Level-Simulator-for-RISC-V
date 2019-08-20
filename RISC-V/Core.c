@@ -14,10 +14,17 @@ Core *initCore(Instruction_Memory *i_mem)
     int i;
     for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
     for (i=0; i< 256; i++) {core->memmory[i] = 0;}
-    core->memmory[0]=16;
-    core->memmory[1]=128;
-    core->memmory[2]=8;
-    core->memmory[3]=4;
+    //test 1
+    core->register_file[1] = 0;
+    core->register_file[2] = 10;
+    core->register_file[3] = 15;
+    core->register_file[4] = 20;
+    core->register_file[5] = 30;
+    core->register_file[6] = 35;
+
+    core->memmory[40] = 5;
+    core->memmory[48] = 63;
+    
     return core;
 }
 
@@ -35,8 +42,8 @@ bool tickFunc(Core *core)
      *     opcode, rd, rs1, rs2
     */
     unsigned optype= instruction & 0x0000007F;    
-    unsigned rs1 = instruction &   0x000FE000 >> 15;
-    unsigned rs2 = instruction &   0x01F00000 >> 20;
+    unsigned rs1 = (instruction &   0xfe000) >> 15;
+    unsigned rs2 = (instruction & 0x1f00000) >> 20;
     unsigned rd = (instruction & 0xf80)>>7;
     unsigned imm;
     
@@ -56,9 +63,7 @@ bool tickFunc(Core *core)
     {
         imm = control.imm - 1;
         imm = ~imm;
-        imm = imm & 0xFFF;
-
-        
+        imm = imm & 0xFFF;        
     }
     
     //ALU Unit Operation
@@ -66,12 +71,14 @@ bool tickFunc(Core *core)
     uint64_t data1 = read_data1;
     uint64_t data2 = Mux(control.ALUSrc,read_data1,imm);
     uint8_t ALUControlSignal = ALU_control(control.ALUOp,instruction);
-    uint64_t ALU_result = ALU(data1,data2,ALUControlSignal);
+    int ALU_result = ALU(data1,data2,ALUControlSignal);
+    printf("r1 %u \n", rs1);
+    printf("r2 %u \n", rs2);
     printf("rd %u \n", rd);
     printf("immi %u \n", imm);
     printf("data1 %"PRIu64"\n", data1);
     printf("data2 %"PRIu64"\n", data2);
-    printf("ALU_result: %"PRIu64"\n", ALU_result);
+    printf("ALU_result: %d\n", ALU_result);
     uint64_t ReadData;
     if (control.MemWrite){
         core->memmory[ALU_result] = read_data2;
@@ -91,10 +98,10 @@ bool tickFunc(Core *core)
     
     printf("ctrl_immi %"PRIu64" \n", control.imm);
     int i;
-    for (i=0;i<10;++i){
+    for (i=0;i<12;++i){
     printf("rst@%i %"PRIu64" \n",i,core->register_file[i]);
     }
-    for (i=0;i<10;++i){
+    for (i=40;i<50;++i){
     printf("mem@%i %"PRIu64" \n",i,core->memmory[i]);
     }
     
@@ -284,9 +291,9 @@ unsigned func7(unsigned instruction)
     return fn7;
 }
 
-uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
+int ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
 {
-    uint64_t result = 0;
+    int result = 0;
     if (ALU_Control_line == 0b0000){
         result = data1 & data2;
     } else if (ALU_Control_line == 0b0001){
