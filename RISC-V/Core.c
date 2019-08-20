@@ -69,13 +69,13 @@ bool tickFunc(Core *core)
     //ALU Unit Operation
 
     int64_t data1 = read_data1;
-    int64_t data2 = Mux(control.ALUSrc,read_data2,imm);
+    int64_t data2 = Mux(control.ALUSrc,read_data2,control.imm);
     uint8_t ALUControlSignal = ALU_control(control.ALUOp,instruction);
     int ALU_result = ALU(data1,data2,ALUControlSignal);
     printf("r1 %u \n", rs1);
     printf("r2 %u \n", rs2);
     printf("rd %u \n", rd);
-    printf("immi %u \n", imm);
+    printf("immi %"PRId64" \n", control.imm);
     printf("data1 %"PRId64"\n", data1);
     printf("data2 %"PRId64"\n", data2);
     printf("ALUOpl %"PRIu8"\n",control.ALUOp);
@@ -113,6 +113,7 @@ bool tickFunc(Core *core)
     unsigned PCincrement = Mux(PCcontrol,4,(core->PC + (imm<<1)));
 
     core->PC += PCincrement;
+
 
     
     ++core->clk;
@@ -207,7 +208,7 @@ void control_unit(unsigned optype,unsigned instruction)
             control.ALUSrc = true;
             control.MemtoReg = false;//don't care X
             control.RegWrite = false;
-            control.MemRead = false;
+            control.MemRead = true;
             control.MemWrite = true;
             control.Branch = false;
             control.ALUOp = 0b00; 
@@ -232,13 +233,13 @@ void control_unit(unsigned optype,unsigned instruction)
              * ld: 0x03 up
              * addi, slli, srli,xori,ori,andi
              *  */
-            control.ALUSrc = false;
+            control.ALUSrc = true;
             control.MemtoReg = false;
-            control.RegWrite = false;
+            control.RegWrite = true;
             control.MemRead = false;
             control.MemWrite = false;
             control.Branch = false;
-            control.ALUOp = 0b00; 
+            control.ALUOp = 0b10; 
             control.imm = (instruction & 0b11111111111100000000000000000000) >> 20;
 
             break;

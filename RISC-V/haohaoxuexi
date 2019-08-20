@@ -3,3 +3,6 @@ and x12, x2, x5
 or x13, x6, x2
 add x14, x2, x2
 ld x4, 100(x7)
+addi x6, x3, 8
+sd x6, 15(x5)
+
