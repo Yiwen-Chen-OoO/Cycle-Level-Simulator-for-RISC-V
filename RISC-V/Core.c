@@ -1,4 +1,8 @@
 #include "Core.h"
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+
 
 Core *initCore(Instruction_Memory *i_mem)
 {
@@ -10,6 +14,10 @@ Core *initCore(Instruction_Memory *i_mem)
     int i;
     for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
     for (i=0; i< 256; i++) {core->memmory[i] = 0;}
+    core->memmory[0]=16;
+    core->memmory[1]=128;
+    core->memmory[2]=8;
+    core->memmory[3]=4;
     return core;
 }
 
@@ -27,21 +35,22 @@ bool tickFunc(Core *core)
      *     opcode, rd, rs1, rs2
     */
     unsigned optype= instruction & 0x0000007F;    
-    unsigned rs1 = instruction &   0x000F8000 >> 15;
+    unsigned rs1 = instruction &   0x000FE000 >> 15;
     unsigned rs2 = instruction &   0x01F00000 >> 20;
     unsigned rd = instruction &    0x00000F80>>7;
     unsigned imm;
     
     /* (Step 3) Control Unit, take opcode as input
             Output 7 bool signal */
-    control_unit(optype,instruction);
+    imm = getImm(instruction);
 
+    control_unit(optype,instruction);
+    control.imm = imm;
     
-    //for R type, Read data 1 and 2;
+    //for R type, Read data 1 and 2;ls
     uint64_t read_data1 = core->register_file[rs1];
     uint64_t read_data2 = core->register_file[rs2]; 
-    printf("rs_1\n", read_data1);
-    printf("rs_2\n", read_data1);
+
     //if is negtive number, remove minus sign
     if ((control.imm & 0x800 >> 11) == 1)
     {
@@ -55,14 +64,11 @@ bool tickFunc(Core *core)
     //ALU Unit Operation
 
     uint64_t data1 = read_data1;
-    uint64_t data2 = Mux(control.ALUSrc,read_data1,read_data2);
-    printf("rs_1: %u\n", read_data1);
-    printf("rs_2: %u\n", read_data2);
-    printf("ALU_In1: %u\n", data1);
-    printf("ALU_In12: %u\n", data2);
+    uint64_t data2 = Mux(control.ALUSrc,read_data1,imm);
     uint8_t ALUControlSignal = ALU_control(control.ALUOp,instruction);
     uint64_t ALU_result = ALU(data1,data2,ALUControlSignal);
-
+    printf("data1 %"PRIu64"\n", data1);
+    printf("data2 %"PRIu64"\n", data2);
     uint64_t ReadData;
     if (control.MemWrite){
         core->memmory[ALU_result] = read_data2;
@@ -76,7 +82,14 @@ bool tickFunc(Core *core)
         core->register_file[rd] = Mux(control.MemtoReg, ALU_result,ReadData);
     }
     
-    
+    printf("immi %u \n", imm);
+    int i;
+    for (i=0;i<10;++i){
+    printf("rst@%i %"PRIu64" \n",i,core->register_file[i]);
+    }
+    for (i=0;i<10;++i){
+    printf("mem@%i %"PRIu64" \n",i,core->memmory[i]);
+    }
     
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?
     
@@ -94,6 +107,57 @@ bool tickFunc(Core *core)
     }
     return true;
 }
+
+unsigned getImm(unsigned instruction)
+{
+
+    //I-Type
+    unsigned int opcode = instruction & 0b1111111;
+    unsigned Imm;
+    if (opcode == 0b0000011 || opcode == 0b0010011)
+    {
+        Imm = instruction >> 20;
+        if (Imm & 0b100000000000)
+            Imm |= 0xfffff000;
+    }
+    // S-Type
+    else if (opcode == 0b0100011)
+    {
+        Imm = ((instruction >> 25) << 5) + ((instruction & 0x00000f80) >> 7);
+        if (Imm & 0b100000000000)
+            Imm |= 0xfffff000;
+    }
+    // SB-Type
+    else if (opcode == 0b1100011)
+    {
+        unsigned imm1, imm2;
+        imm1 = instruction >> 25;
+        imm2 = ((instruction & 0x00000f80) >> 7);
+        Imm = 0;
+        Imm |= ((imm2 & 1) << 11);
+        Imm |= (imm2 & 0b11110);
+        Imm |= ((imm1 & 0b1000000) << 6);
+        Imm |= ((imm1 & 0b0111111) << 5);
+
+        if (Imm & 0x1000)
+            Imm |= 0xffffe000;
+    }
+    // UJ-Type
+    else if (opcode == 0b1101111)
+    {
+        unsigned int imm = instruction >> 12;
+        Imm = 0;
+        Imm |= ((imm & 0b11111111) << 12);
+        Imm |= ((imm & 0x100) << 3);
+        Imm |= ((imm & 0x7fe00) >> 8);
+        Imm |= ((imm & 0x80000) << 1);
+
+        if (Imm & 0x100000)
+            Imm |= 0xffe00000;
+    }
+    return Imm;
+}
+
 void control_unit(unsigned optype,unsigned instruction)
 {
     switch (optype)
@@ -118,7 +182,9 @@ void control_unit(unsigned optype,unsigned instruction)
             control.MemWrite = false;
             control.Branch = false;
             control.ALUOp = 0b00; 
-            control.imm = (instruction & 0b11111111111100000000000000000000) >> 20;
+            control.imm = (instruction & 0b111110000000) >> 7;
+            control.imm = control.imm|((instruction) & 0xFE000000>>25<<7);
+
             break;
         case 0x23:
             // sd type S
@@ -197,14 +263,14 @@ uint8_t ALU_control(uint8_t ALUOp, uint32_t instruction )
 unsigned func3(unsigned instruction)
 {
     unsigned fn3 = 0;
-    fn3 = instruction & 0xF80>>7;
+    fn3 = instruction & 0x7000>>12;
     return fn3;
 }
 
 unsigned func7(unsigned instruction)
 {
     unsigned fn7 = 0;
-    fn7 = instruction & 0xFE000000>>25;
+    fn7 = instruction >>25;
     return fn7;
 }
 

@@ -64,6 +64,11 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
             i_mem->last = &(i_mem->instructions[IMEM_index]);        
         
         }
+        else if (strcmp(raw_instr, "jal") == 0)
+        {
+            parseUJType(raw_instr, &(i_mem->instructions[IMEM_index]));
+            i_mem->last = &(i_mem->instructions[IMEM_index]);
+        }
 
         IMEM_index++;
         PC += 4;
@@ -146,82 +151,89 @@ void parseRType(char *opr, Instruction *instr)
 
 void parseIType(char *opr, Instruction *instr)
 {
-    // I-type：ld, addi, slli, xori, srli, ori, andi, jarl;
-    // ld, sd
     instr->instruction = 0;
     unsigned opcode = 0;
     unsigned funct3 = 0;
-    unsigned rd, rs_1, imm;
-    const char *d = " ,()";
-    
+    unsigned rd;
+    unsigned rs_1;
+    int imm;
+
     if (strcmp(opr, "ld") == 0)
     {
-        unsigned opcode = 0b0000011;
-        unsigned funct3 = 0b011;   
-        
-        char *reg = strtok(NULL, d);
+        opcode = 0b0000011;
+        funct3 = 0b011;
+
+        char *reg = strtok(NULL, ", ()");
         rd = regIndex(reg);
-        printf("%s\n", reg);
-        
-        reg = strtok(NULL,d);
+
+        reg = strtok(NULL, ", ()");
         imm = atoi(reg);
-        printf("%s\n", reg);
 
-        reg = strtok(NULL,d);
+        reg = strtok(NULL, ", ()");
         rs_1 = regIndex(reg);
-        printf("%s\n", reg);
-    } else {
-
+    }
+    else
+    {
         if (strcmp(opr, "addi") == 0)
         {
-            unsigned opcode = 0x13;
-            unsigned funct3 = 0x7;
-        } else if (strcmp(opr, "slli") == 0)
+            opcode = 0b0010011;
+            funct3 = 0;
+        }
+        else if (strcmp(opr, "slli") == 0)
         {
-            opcode = 0x13;
-            funct3 = 0x1;
+            opcode = 0b0010011;
+            funct3 = 0b001;
+        }
+        else if (strcmp(opr, "slti") == 0)
+        {
+            opcode = 0b0010011;
+            funct3 = 0b010;
+        }
+        else if (strcmp(opr, "sltiu") == 0)
+        {
+            opcode = 0b0010011;
+            funct3 = 0b011;
         }
         else if (strcmp(opr, "xori") == 0)
         {
-            opcode = 0x13;
-            funct3 = 0x4;
+            opcode = 0b0010011;
+            funct3 = 0b100;
         }
         else if (strcmp(opr, "srli") == 0)
         {
-            opcode = 0x13;
-            funct3 = 0x5;
+            opcode = 0b0010011;
+            funct3 = 0b101;
         }
+
         else if (strcmp(opr, "ori") == 0)
         {
-            opcode = 0x13;
-            funct3 = 0x6;
+            opcode = 0b0010011;
+            funct3 = 0b110;
         }
         else if (strcmp(opr, "andi") == 0)
         {
-            opcode = 0x13;
-            funct3 = 0x7;
+            opcode = 0b0010011;
+            funct3 = 0b111;
         }
-        char *reg = strtok(NULL,", ");
-        rd = regIndex(reg);
-        printf("%s\n", reg);
-        printf("%u\n", rd);
 
-        reg = strtok(NULL,", ");
-        rs_1 = regIndex(reg);
-        printf("%s\n", reg);
-        printf("%u\n", rs_1);
+        char *reg = strtok(NULL, ", ");
+        rd = regIndex(reg);
+
         reg = strtok(NULL, ", ");
-        reg[strlen(reg)-1] = '\0';
+        rs_1 = regIndex(reg);
+
+        reg = strtok(NULL, ", ");
+        reg[strlen(reg) - 1] = '\0';
         imm = atoi(reg);
-        printf("%s\n", reg);
-        printf("%u\n", imm);
     }
+
     instr->instruction |= opcode;
     instr->instruction |= (rd << 7);
     instr->instruction |= (funct3 << (7 + 5));
     instr->instruction |= (rs_1 << (7 + 5 + 3));
-    instr->instruction |= (imm << (7 + 5 + 3 + 10));
+    instr->instruction |= (imm << (7 + 3 + 10));
     printf("%u\n", instr->instruction);
+    printf("imm:   %u\n", imm);
 }
 
 void parseSType(char *opr, Instruction *instr)
@@ -314,6 +326,35 @@ void parseSBType(char *opr, Instruction *instr)
     instr->instruction |= (rs_2 << (7 + 5 + 3 + 5));
     instr->instruction |= (imm_2 << (7 + 5 + 3 + 5 + 5));
     printf("%u\n", instr->instruction);
+}
+void parseUJType(char *opr, Instruction *instr)
+{
+    instr->instruction = 0;
+    unsigned opcode;
+    unsigned rd;
+    int imm;
+
+    if (strcmp(opr, "jal") == 0)
+    {
+        opcode = 0b1101111;
+    }
+
+    char *reg = strtok(NULL, ", ");
+    rd = regIndex(reg);
+
+    reg = strtok(NULL, ", ");
+    reg[strlen(reg) - 1] = '\0';
+    imm = atoi(reg);
+
+    unsigned imm1 = (imm >> 12) & 0b11111111;
+    unsigned imm2 = (imm >> 11) & 1;
+    unsigned imm3 = (imm >> 1) & 0b1111111111;
+    unsigned imm4 = (imm >> 20) & 1;
+    unsigned final_imm = (imm4 << 19) + (imm3 << 9) + (imm2 << 8) + imm1;
+    // Contruct instruction
+    instr->instruction |= opcode;
+    instr->instruction |= (rd << 7);
+    instr->instruction |= (final_imm << (7 + 5));
 }
 
 
