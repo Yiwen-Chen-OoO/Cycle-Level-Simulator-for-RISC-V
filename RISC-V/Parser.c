@@ -24,11 +24,11 @@ void loadInstructions(Instruction_Memory *i_mem, const char *trace)
     {
         // Assign program counter
         i_mem->instructions[IMEM_index].addr = PC;
-
+        printf("%s\n", line);
         // Extract operation
         char *raw_instr = strtok(line, " ");
 
-        printf("%s\n", raw_instr);
+        
 
         if (strcmp(raw_instr, "add") == 0 ||
             strcmp(raw_instr, "sub") == 0 ||
@@ -226,14 +226,13 @@ void parseIType(char *opr, Instruction *instr)
         reg[strlen(reg) - 1] = '\0';
         imm = atoi(reg);
     }
-
+    //printf("rd_parse%i",rd);
     instr->instruction |= opcode;
     instr->instruction |= (rd << 7);
     instr->instruction |= (funct3 << (7 + 5));
     instr->instruction |= (rs_1 << (7 + 5 + 3));
     instr->instruction |= (imm << (7 + 3 + 10));
-    printf("%u\n", instr->instruction);
-    printf("imm:   %u\n", imm);
+    
 }
 
 void parseSType(char *opr, Instruction *instr)

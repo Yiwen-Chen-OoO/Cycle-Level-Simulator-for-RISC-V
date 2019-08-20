@@ -37,7 +37,7 @@ bool tickFunc(Core *core)
     unsigned optype= instruction & 0x0000007F;    
     unsigned rs1 = instruction &   0x000FE000 >> 15;
     unsigned rs2 = instruction &   0x01F00000 >> 20;
-    unsigned rd = instruction &    0x00000F80>>7;
+    unsigned rd = (instruction & 0xf80)>>7;
     unsigned imm;
     
     /* (Step 3) Control Unit, take opcode as input
@@ -67,8 +67,11 @@ bool tickFunc(Core *core)
     uint64_t data2 = Mux(control.ALUSrc,read_data1,imm);
     uint8_t ALUControlSignal = ALU_control(control.ALUOp,instruction);
     uint64_t ALU_result = ALU(data1,data2,ALUControlSignal);
+    printf("rd %u \n", rd);
+    printf("immi %u \n", imm);
     printf("data1 %"PRIu64"\n", data1);
     printf("data2 %"PRIu64"\n", data2);
+    printf("ALU_result: %"PRIu64"\n", ALU_result);
     uint64_t ReadData;
     if (control.MemWrite){
         core->memmory[ALU_result] = read_data2;
@@ -76,13 +79,17 @@ bool tickFunc(Core *core)
     }
     if(control.MemRead){
         ReadData = core->memmory[ALU_result];
+        printf("MemRead:");
+        printf("%"PRIu64"\n",core->memmory[ALU_result]);
     }
 
     if(control.RegWrite){
         core->register_file[rd] = Mux(control.MemtoReg, ALU_result,ReadData);
+        printf("RegWrite:");
+        printf("%"PRIu64"\n",core->register_file[rd]);
     }
     
-    printf("immi %u \n", imm);
+    printf("ctrl_immi %"PRIu64" \n", control.imm);
     int i;
     for (i=0;i<10;++i){
     printf("rst@%i %"PRIu64" \n",i,core->register_file[i]);
@@ -244,7 +251,10 @@ uint8_t ALU_control(uint8_t ALUOp, uint32_t instruction )
     if (ALUOp == 0b00){
         return 0b0010;
     } else if (ALUOp == 0b01){
+        if ((func3(instruction)==0) || (func3(instruction)==1))
         return 0b0110;
+        if (func3(instruction) >= 0b100 && func3(instruction) <= 0b111)
+            return 0b0111;
     } else {
         if (func3(instruction) == 0){
             if (func7(instruction)==0){
@@ -277,14 +287,24 @@ unsigned func7(unsigned instruction)
 uint64_t ALU(uint64_t data1, uint64_t data2, uint8_t ALU_Control_line)
 {
     uint64_t result = 0;
-    if (ALU_Control_line == 0000){
+    if (ALU_Control_line == 0b0000){
         result = data1 & data2;
-    } else if (ALU_Control_line == 0001){
+    } else if (ALU_Control_line == 0b0001){
         result = data1 | data2;
-    } else if (ALU_Control_line == 0010){
+    } else if (ALU_Control_line == 0b0010){
         result = data1 + data2;
-    }else if (ALU_Control_line == 0001){
+    }else if (ALU_Control_line == 0b0110){
         result = data1 - data2;
+    }else if (ALU_Control_line == 0b0011){
+        result = data1 << data2;
+    }else if (ALU_Control_line == 0b0100){
+        result = data1 >> data2;
+    }else if (ALU_Control_line == 0b0101){
+        result = data1 ^ data2;
+    }else if (ALU_Control_line == 0b0111){
+        result = (data1 < data2 ? 1 : 0);
+    }else{
+        result = (data1 == data2 ? 1 : 0);
     }
 
     return result;
