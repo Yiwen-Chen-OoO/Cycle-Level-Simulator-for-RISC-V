@@ -106,12 +106,12 @@ bool tickFunc(Core *core)
     for (i=40;i<50;++i){
     printf("mem@%i %"PRId64" \n",i,core->memmory[i]);
     }
-    printf("===========================================");
+    printf("===========================================\n");
     // (Step N) Increment PC. FIXME, is it correct to always increment PC by 4?
     
     unsigned PCcontrol = control.Branch && BranchControl(instruction,read_data1,read_data2);
     unsigned PCincrement = Mux(PCcontrol,4,(core->PC + (imm<<1)));
-
+     printf("PControl: %u",PCcontrol);
     core->PC += PCincrement;
 
 
@@ -218,7 +218,7 @@ void control_unit(unsigned optype,unsigned instruction)
             // beq type: SB
             control.ALUSrc = false;
             control.MemtoReg = false;//don't care X
-            control.RegWrite = false;
+            control.RegWrite = true;
             control.MemRead = false;
             control.MemWrite = false;
             control.Branch = true;
@@ -355,19 +355,19 @@ int BranchControl(unsigned instruction, unsigned rs1, unsigned rs2){
 
     int result;
 
-    if(func3(instruction) == 0x0 && (rs1 == rs2))
+    if((func3(instruction) == 0x0) && (rs1 == rs2))
     {
         result = 1;
     }
-    else if(func3(instruction) && (rs1 != rs2))
+    else if((func3(instruction)==1) && (rs1 != rs2))
     {
         result = 1;
     }
-    else if(func3(instruction) && (rs1 < rs2))
+    else if((func3(instruction)==4) && (rs1 < rs2))
     {
         result = 1;
     }
-    else if(func3(instruction) && (rs1 >= rs2))
+    else if((func3(instruction)==5) && (rs1 >= rs2))
     {
         result = 1;
     }
