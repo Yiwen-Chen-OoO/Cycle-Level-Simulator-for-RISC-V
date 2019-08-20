@@ -15,6 +15,7 @@ Core *initCore(Instruction_Memory *i_mem)
     for (i = 0; i < 32; i++) { core->register_file[i] = 0;}
     for (i=0; i< 256; i++) {core->memmory[i] = 0;}
     //test 1
+    /*
     core->register_file[1] = 0;
     core->register_file[2] = 10;
     core->register_file[3] = 15;
@@ -24,7 +25,14 @@ Core *initCore(Instruction_Memory *i_mem)
 
     core->memmory[40] = 5;
     core->memmory[48] = 63;
-    
+    */
+    core->register_file[25] = 4;
+    core->register_file[10] = 4;
+    core->register_file[22] =1;
+    core->memmory[0] = 16;
+    core->memmory[1] = 128;
+    core->memmory[2] = 8;
+    core->memmory[3] = 4;
     return core;
 }
 
@@ -83,11 +91,11 @@ bool tickFunc(Core *core)
     printf("ALU_result: %d\n", ALU_result);
     int64_t ReadData;
     if (control.MemWrite){
-        core->memmory[ALU_result] = read_data2;
+        core->memmory[ALU_result/8] = read_data2;
 
     }
     if(control.MemRead){
-        ReadData = core->memmory[ALU_result];
+        ReadData = core->memmory[ALU_result/8];
         printf("MemRead:");
         printf("%"PRId64"\n",core->memmory[ALU_result]);
     }
@@ -103,7 +111,7 @@ bool tickFunc(Core *core)
     for (i=0;i<12;++i){
     printf("rst@%i %"PRId64" \n",i,core->register_file[i]);
     }
-    for (i=40;i<50;++i){
+    for (i=0;i<12;++i){
     printf("mem@%i %"PRId64" \n",i,core->memmory[i]);
     }
     printf("===========================================\n");
